@@ -22,12 +22,12 @@ class UserService {
         return User.create(user)
     }
 
-    async update(id, user) {
-        return User.findByIdAndUpdate(id, user, {new: true});
+    async update(email, user) {
+        return User.findOneAndUpdate({email : email}, user, {new: true});
     }
 
-    async delete(id) {
-        await User.findByIdAndDelete(id)
+    async delete(email) {
+        await User.findOneAndDelete({email : email});
     }
 }
 

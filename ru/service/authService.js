@@ -8,7 +8,10 @@ class AuthService {
     async login(user) {
         const userFromDB = await userService.getByEmail(user.email);
         if(userFromDB === null){
-            return apiError.forbidden("User not found");
+            return apiError.notFound("User not found");
+        }
+        if (user.role !== userFromDB.role) {
+            return apiError.forbidden("Forbidden");
         }
 
         let comparePassword = bcrypt.compareSync(user.password, userFromDB.password);

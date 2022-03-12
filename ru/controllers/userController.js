@@ -22,12 +22,12 @@ class UserController{
     }
 
     async update(req, res){
-        const user = await userService.update(req.params.id, req.body)
+        const user = await userService.update(req.params.email, req.body)
         return res.json(user)
     }
 
     async delete(req, res){
-        await userService.delete(req.params.id)
+        await userService.delete(req.params.email)
         res.json()
     }
 }
