@@ -1,15 +1,20 @@
 const selectedProductService = require("../service/selectedProductService")
 
 class SelectedProductController{
+    async get(req, res){
+        const selectedProduct = await selectedProductService.get(req.params.id)
+        return res.json(selectedProduct)
+    }
+
     async getAll(req, res){
         const selectedProduct = await selectedProductService.getAll()
         return res.json(selectedProduct)
     }
 
     async create(req, res){
-        const userId = req.query.userId
+        const userEmail = req.query.userEmail
         const goodsId = req.query.goodsId
-        const selectedProduct = await selectedProductService.create(req.body, userId, goodsId)
+        const selectedProduct = await selectedProductService.create(req.body, userEmail, goodsId)
         return res.json(selectedProduct)
     }
 

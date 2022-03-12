@@ -1,9 +1,9 @@
 const Order = require("../models/Order")
 const OrderStatus = require("../enums/OrderStatus")
 const BillStatus = require("../enums/BillStatus")
-const PaymentType = require("../enums/PaymentType")
 const goodsService = require("./goodsService")
-const selProductService = require("./selectedProductService")
+const userService= require("./userService")
+const SelectedProduct = require("../models/SelectedProduct")
 
 class OrderService{
 
@@ -11,19 +11,26 @@ class OrderService{
         return Order.findById(id);
     }
 
-    async getByUserIdAndOrderStatus(userId, orderStatus){
-        return Order.findOne({user: userId, orderStatus: orderStatus})
+    async getByUserEmailAndOrderStatus(userEmail, orderStatus) {
+        const user = await userService.getByEmail(userEmail);
+        return Order.findOne({user: user, orderStatus: orderStatus})
     }
 
     async getAllByOrderStatus(orderStatus){
         return Order.find({orderStatus: orderStatus})
     }
 
+    async getAllByUserEmail(email){
+        const user = await userService.getByEmail(email);
+        return Order.find({user: user._id});
+    }
+
     async getAll() {
         return Order.find();
     }
 
-    async create(user, selectedProduct, price) {
+    async create(userEmail, selectedProduct, price) {
+        const user = await userService.getByEmail(userEmail);
         const order = new Order();
 
         order.user = user;
@@ -39,40 +46,31 @@ class OrderService{
         const orderFromDB = await this.get(id);
 
         if(order.orderStatus === "PENDING") {
-            await this.decGoodsCount(orderFromDB);
+            await this.reduceOrReturnGoodsCount(orderFromDB, "reduce");
         } else if (order.orderStatus === "CANCELLED") {
-            await this.returnGoodsCount(orderFromDB);
+            await this.reduceOrReturnGoodsCount(orderFromDB, "return");
         }
         
         return Order.findByIdAndUpdate(id, order, {new: true});
     }
 
-     async decGoodsCount(orderFromDB) {
+     async reduceOrReturnGoodsCount(orderFromDB, operationType) {
         const selProducts = await orderFromDB.selectedProducts;
          for (const selProductId of selProducts) {
-             const selProduct = await selProductService.get(selProductId);
+             const selProduct = await SelectedProduct.findById(selProductId);
              const goods = await goodsService.get(selProduct.goods);
 
              const selectedCount = selProduct.count;
              const oldCount = goods.count;
 
-             goods.count = oldCount - selectedCount;
+             if(operationType === "reduce"){
+                 goods.count = oldCount - selectedCount;
+             } else if (operationType === "return"){
+                 goods.count = oldCount + selectedCount;
+             }
+
              await goodsService.update(goods._id, goods);
          }
-    }
-
-    async returnGoodsCount(orderFromDB) {
-        const selProducts = await orderFromDB.selectedProducts;
-        for (const selProductId of selProducts) {
-            const selProduct = await selProductService.get(selProductId);
-            const goods = await goodsService.get(selProduct.goods);
-
-            const selectedCount = selProduct.count;
-            const oldCount = goods.count;
-
-            goods.count = oldCount + selectedCount;
-            await goodsService.update(goods._id, goods);
-        }
     }
 
     async delete(id) {

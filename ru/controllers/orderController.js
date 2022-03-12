@@ -11,6 +11,11 @@ class OrderController{
         return res.json(order)
     }
 
+    async getAllByUserEmail(req, res){
+        const order = await orderService.getAllByUserEmail(req.params.email)
+        return res.json(order)
+    }
+
     async getAll(req, res){
         const order = await orderService.getAll()
         return res.json(order)

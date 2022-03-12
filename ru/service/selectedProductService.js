@@ -1,10 +1,9 @@
 const SelectedProduct = require("../models/SelectedProduct")
-const userService = require("./userService")
 const goodsService = require("./goodsService")
 const orderService = require("./orderService")
 
 class SelectedProductService {
-    async get(id){
+    async get(id) {
         return SelectedProduct.findById(id);
     }
 
@@ -12,7 +11,7 @@ class SelectedProductService {
         return SelectedProduct.find()
     }
 
-    async create(selectedProduct, userId, goodsId) {
+    async create(selectedProduct, userEmail, goodsId) {
         const goods = await goodsService.get(goodsId);
 
         selectedProduct.goods = goods;
@@ -21,15 +20,14 @@ class SelectedProductService {
 
         const createdSelProduct = await SelectedProduct.create(selectedProduct);
 
-        const order = await orderService.getByUserIdAndOrderStatus(userId, "CREATING");
+        const order = await orderService.getByUserEmailAndOrderStatus(userEmail, "CREATING");
         if(order !== null) {
             const oldPrice = order.totalPrice;
             order.totalPrice = newPrice + oldPrice;
             order.selectedProducts.push(createdSelProduct);
             await orderService.update(order._id, order);
         } else {
-            const user = await userService.get(userId);
-            await orderService.create(user, createdSelProduct, newPrice);
+            await orderService.create(userEmail, createdSelProduct, newPrice);
         }
 
         return createdSelProduct;
